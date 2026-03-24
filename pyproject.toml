@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "capability-cartography-layer"
+version = "0.1.0"
+description = "A unified measurement framework for capability formation, failure geometry, compressibility, retrieval dependence, and phase boundaries in language models."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+  { name = "Paul \"The Pageman\" Pajo" }
+]
+dependencies = [
+  "numpy",
+  "PyYAML"
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+

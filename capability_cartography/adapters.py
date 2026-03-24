@@ -1,0 +1,163 @@
+"""Adapters for the Sutskever substrate, GPT-1 wind tunnel, and agent layer."""
+
+from __future__ import annotations
+
+import importlib.util
+import os
+from pathlib import Path
+from typing import Any, Dict, List
+
+import numpy as np
+import yaml
+
+
+def _env_or_default(env_var: str, default: str | None) -> Path | None:
+    value = os.environ.get(env_var, default)
+    return Path(value).expanduser() if value else None
+
+
+class NotebookSubstrateAdapter:
+    """Metadata and task adapters for the Sutskever-30 substrate."""
+
+    PAPER_TRACKS = {
+        "01_complexity_dynamics": "foundational",
+        "05_neural_network_pruning": "foundational",
+        "13_attention_is_all_you_need": "architecture",
+        "16_relational_reasoning": "architecture",
+        "18_relational_rnn": "advanced",
+        "22_scaling_laws": "scaling",
+        "23_mdl_principle": "theory",
+        "25_kolmogorov_complexity": "theory",
+        "28_dense_passage_retrieval": "retrieval",
+        "29_rag": "retrieval",
+        "30_lost_in_middle": "retrieval",
+    }
+
+    def __init__(self, root: Path | str | None = None):
+        resolved = Path(root).expanduser() if root else _env_or_default("SUTSKEVER30_ROOT", None)
+        self.root = resolved
+
+    def list_notebooks(self) -> List[Dict[str, str]]:
+        if self.root is None or not self.root.exists():
+            return []
+        notebooks = []
+        for path in sorted(self.root.glob("*.ipynb")):
+            notebooks.append(
+                {
+                    "paper_id": path.stem.split("_", 1)[0],
+                    "name": path.stem,
+                    "track": self.PAPER_TRACKS.get(path.stem, "general"),
+                    "path": str(path),
+                }
+            )
+        return notebooks
+
+    def describe_notebook(self, notebook_name: str) -> Dict[str, Any]:
+        if self.root is None:
+            raise FileNotFoundError("Notebook substrate root is not configured.")
+        path = self.root / f"{notebook_name}.ipynb"
+        if not path.exists():
+            raise FileNotFoundError(f"Notebook not found: {path}")
+        return {
+            "name": notebook_name,
+            "path": str(path),
+            "track": self.PAPER_TRACKS.get(notebook_name, "general"),
+            "size_bytes": path.stat().st_size,
+        }
+
+
+class GPT1WindTunnelAdapter:
+    """Loads the GPT-1 implementation and exposes cartography-friendly hooks."""
+
+    def __init__(self, root: Path | str | None = None):
+        resolved = Path(root).expanduser() if root else _env_or_default("GPT1_WIND_TUNNEL_ROOT", None)
+        self.root = resolved
+        self.module = None
+        if self.root is not None:
+            path = self.root / "gpt1_complete_implementation.py"
+            if path.exists():
+                self.module = self._load_module(path)
+
+    @staticmethod
+    def _load_module(path: Path):
+        spec = importlib.util.spec_from_file_location("gpt1_complete_implementation", path)
+        if spec is None or spec.loader is None:
+            raise ImportError(f"Could not load GPT-1 module from {path}")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+
+    def is_available(self) -> bool:
+        return self.module is not None
+
+    def instantiate(self, **config: Any):
+        if self.module is None:
+            raise RuntimeError("GPT-1 wind tunnel root is not configured or the implementation file is missing.")
+        model_cls = getattr(self.module, "GPT1")
+        return model_cls(**config)
+
+    def dry_run_metrics(self, *, prompt: str, vocab_size: int = 64, **config: Any) -> Dict[str, float]:
+        if self.module is None:
+            length = max(len(prompt), 1)
+            width = int(config.get("d_model", 64))
+            heads = int(config.get("num_heads", 4))
+            layers = int(config.get("num_layers", 2))
+            return {
+                "logit_std": float(np.tanh(length / 50.0)),
+                "attention_density_proxy": float(min(1.0, heads / max(width / 16.0, 1.0))),
+                "capacity_proxy": float(width * heads * layers),
+            }
+        model = self.instantiate(vocab_size=vocab_size, **config)
+        token_ids = list(range(min(len(prompt), model.max_seq_len)))
+        if not token_ids:
+            token_ids = [0, 1]
+        logits = model.forward(token_ids)
+        logits = np.asarray(logits, dtype=float)
+        attention_density = float(np.mean(np.abs(logits) > np.mean(np.abs(logits))))
+        return {
+            "logit_std": float(np.std(logits)),
+            "attention_density_proxy": attention_density,
+            "capacity_proxy": float(model.num_layers * model.num_heads * model.d_model),
+        }
+
+
+class AgentOverlayAdapter:
+    """Reads the agent repo and produces cartography-oriented narratives."""
+
+    def __init__(self, root: Path | str | None = None):
+        resolved = Path(root).expanduser() if root else _env_or_default("SUTSKEVER_AGENT_ROOT", None)
+        self.root = resolved
+        self.agent_config = {}
+        if self.root is not None:
+            agent_yaml = self.root / "agent.yaml"
+            if agent_yaml.exists():
+                self.agent_config = yaml.safe_load(agent_yaml.read_text()) or {}
+
+    def available_skills(self) -> List[str]:
+        return list(self.agent_config.get("skills", []))
+
+    def narrate(self, artifact: Dict[str, Any]) -> str:
+        trajectory = artifact["trajectory"]
+        boundaries = trajectory.get("boundary_events", [])
+        fits = trajectory.get("fitted_boundaries", [])
+        substrate = trajectory.get("substrate", "unknown")
+        experiment_id = trajectory.get("experiment_id", "unknown")
+        if boundaries:
+            first_boundary = boundaries[0]
+            boundary_clause = (
+                f"{first_boundary['metric']} crossed into {first_boundary['regime_after']} "
+                f"at step {first_boundary['step']} with delta {first_boundary['delta']:.3f}."
+            )
+        else:
+            boundary_clause = "No abrupt regime transition cleared the changepoint threshold."
+        fit_clause = ""
+        if fits:
+            fit = fits[0]
+            fit_clause = (
+                f" Median threshold for {fit['metric']} sat at {fit['threshold_value']:.3f} "
+                f"(step {fit['threshold_step']})."
+            )
+        return (
+            f"Sutskever-Agent cartography summary for {experiment_id} on {substrate}: "
+            f"{boundary_clause}{fit_clause}"
+        )
