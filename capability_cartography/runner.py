@@ -12,6 +12,7 @@ from .adapters import AgentOverlayAdapter, GPT1WindTunnelAdapter, NotebookSubstr
 from .boundary import BoundaryAnalyzer
 from .compressibility import CompressibilityStack
 from .descriptors import TaskDescriptorExtractor
+from .execution import MeasuredRunExecutor
 from .metrics import aggregate_snapshot_metrics, calibration_error, estimate_capability_score
 from .schemas import (
     ArtifactBundle,
@@ -38,6 +39,7 @@ class CapabilityCartographyRunner:
         self.descriptor_extractor = TaskDescriptorExtractor()
         self.compressibility = CompressibilityStack()
         self.boundary = BoundaryAnalyzer()
+        self.measured_executor = MeasuredRunExecutor(self.substrate_adapter, self.wind_tunnel_adapter)
 
     def run_text_experiment(
         self,
@@ -99,6 +101,53 @@ class CapabilityCartographyRunner:
             },
         )
         bundle.narrative = self.agent_adapter.narrate(bundle.to_dict())
+        if export_dir is not None:
+            bundle.export_path = self.export(bundle, export_dir=export_dir)
+        return bundle
+
+    def run_measured_experiment(
+        self,
+        spec: ExperimentSpec,
+        intervention: InterventionConfig,
+        *,
+        task_family: str,
+        seed: int,
+        scale: int,
+        data_tokens: int,
+        train_steps: int = 4,
+        export_dir: str | Path | None = None,
+    ) -> ArtifactBundle:
+        measured = self.measured_executor.run(
+            task_family=task_family,
+            seed=seed,
+            scale=scale,
+            data_tokens=data_tokens,
+            num_layers=int(intervention.architecture.get("num_layers", 2)),
+            train_steps=train_steps,
+            seq_length=int(intervention.context_geometry.get("max_seq_len", 24)),
+            learning_rate=float(intervention.objective.get("learning_rate", 1e-4)),
+        )
+        text = measured["train_text"]
+        bundle = self.run_text_experiment(
+            spec,
+            intervention,
+            text=text,
+            retrieval_context=measured["holdout_text"],
+            metric_series=measured["metric_series"],
+            export_dir=export_dir,
+        )
+        bundle.trajectory.aggregate_metrics["generalization_gap"] = measured["generalization_gap"]
+        bundle.trajectory.aggregate_metrics["measured_mode"] = True
+        bundle.spec.metadata.update(
+            {
+                "seed": seed,
+                "task_family": task_family,
+                "task_family_code": measured["task_family_code"],
+                "data_tokens": data_tokens,
+                "scale": scale,
+                "descriptor_hints": measured["descriptor_hints"],
+            }
+        )
         if export_dir is not None:
             bundle.export_path = self.export(bundle, export_dir=export_dir)
         return bundle

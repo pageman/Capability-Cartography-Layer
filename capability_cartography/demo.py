@@ -81,6 +81,19 @@ def main() -> None:
     print("Sweep Summary")
     print(json.dumps(sweep_result["summary"], indent=2))
 
+    measured_result = sweep_runner.run_measured_grid(
+        base_spec=spec,
+        base_intervention=intervention,
+        task_family_values=["object_tracking", "pair_matching", "babi_simple", "retrieval_qa"],
+        scale_values=[32, 64],
+        data_token_values=[1024, 2048],
+        seeds=[1, 2],
+        train_steps=2,
+    )
+    print()
+    print("Measured Law Summary")
+    print(json.dumps(measured_result["summary"], indent=2))
+
 
 if __name__ == "__main__":
     main()

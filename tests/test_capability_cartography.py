@@ -11,6 +11,7 @@ from capability_cartography.descriptors import TaskDescriptorExtractor
 from capability_cartography.runner import CapabilityCartographyRunner
 from capability_cartography.schemas import CapabilitySnapshot, ExperimentSpec, InterventionConfig
 from capability_cartography.sweeps import SweepRunner
+from capability_cartography.validation import PredictiveLawValidator
 
 
 class CapabilityCartographyTests(unittest.TestCase):
@@ -112,6 +113,43 @@ class CapabilityCartographyTests(unittest.TestCase):
         self.assertTrue(substrate.link_metadata()["available"])
         self.assertTrue(agent.link_metadata()["available"])
         self.assertTrue(wind_tunnel.link_metadata()["available"])
+        self.assertIsNotNone(substrate.link_metadata()["commit"])
+
+    def test_measured_grid_validation(self):
+        runner = CapabilityCartographyRunner(
+            substrate_adapter=NotebookSubstrateAdapter("/Users/hifi/sutskever-30-implementations"),
+            wind_tunnel_adapter=GPT1WindTunnelAdapter("/Users/hifi/Downloads/GPT1_from_Sutskerver30/GPT1_from_Sutskever30"),
+            agent_adapter=AgentOverlayAdapter("/Users/hifi/Downloads/Sutskever-Agent/sutskever-agent"),
+        )
+        intervention = InterventionConfig(
+            architecture={"d_model": 32, "num_layers": 1},
+            objective={"loss_type": "next_token", "learning_rate": 1e-4},
+            data_regime={"data_tokens": 1024},
+            retrieval={"enabled": True, "distractor_density": 0.2},
+            context_geometry={"max_seq_len": 16, "answer_position": 12},
+        )
+        spec = ExperimentSpec(
+            experiment_id="measured-test",
+            substrate="gpt1-from-sutskever30",
+            task_name="object_tracking",
+            benchmark_label="unit",
+            realism_level="semi_synthetic",
+            objective_type="next_token",
+            model_family="gpt1-measured",
+        )
+        with TemporaryDirectory() as temp_dir:
+            sweep_runner = SweepRunner(runner, temp_dir)
+            result = sweep_runner.run_measured_grid(
+                base_spec=spec,
+                base_intervention=intervention,
+                task_family_values=["object_tracking", "retrieval_qa"],
+                scale_values=[32],
+                data_token_values=[512],
+                seeds=[1, 2],
+                train_steps=1,
+            )
+            self.assertEqual(result["summary"]["record_count"], 4)
+            self.assertIn("laws", result["summary"]["validation"])
 
 
 if __name__ == "__main__":

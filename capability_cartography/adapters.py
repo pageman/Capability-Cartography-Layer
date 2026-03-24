@@ -10,6 +10,7 @@ from typing import Any, Dict, List
 import numpy as np
 import yaml
 
+from .provenance import repository_provenance
 
 def _env_or_default(env_var: str, default: str | None) -> Path | None:
     value = os.environ.get(env_var, default)
@@ -85,13 +86,13 @@ class NotebookSubstrateAdapter:
         }
 
     def link_metadata(self) -> Dict[str, Any]:
-        return {
-            "name": "pageman/Sutskever-30-implementations",
-            "url": self.CANONICAL_REPOSITORY,
-            "configured_root": str(self.root) if self.root else None,
-            "available": bool(self.root and self.root.exists()),
-            "notebook_count": len(self.list_notebooks()),
-        }
+        payload = repository_provenance(
+            name="pageman/Sutskever-30-implementations",
+            url=self.CANONICAL_REPOSITORY,
+            root=self.root,
+        )
+        payload["notebook_count"] = len(self.list_notebooks())
+        return payload
 
 
 class GPT1WindTunnelAdapter:
@@ -154,12 +155,13 @@ class GPT1WindTunnelAdapter:
         }
 
     def link_metadata(self) -> Dict[str, Any]:
-        return {
-            "name": "pageman/gpt1-from-Sutskever30",
-            "url": self.CANONICAL_REPOSITORY,
-            "configured_root": str(self.root) if self.root else None,
-            "available": self.is_available(),
-        }
+        payload = repository_provenance(
+            name="pageman/gpt1-from-Sutskever30",
+            url=self.CANONICAL_REPOSITORY,
+            root=self.root,
+        )
+        payload["available"] = self.is_available()
+        return payload
 
 
 class AgentOverlayAdapter:
@@ -183,13 +185,13 @@ class AgentOverlayAdapter:
         return list(self.agent_config.get("skills", []))
 
     def link_metadata(self) -> Dict[str, Any]:
-        return {
-            "name": "pageman/Sutskever-Agent",
-            "url": self.CANONICAL_REPOSITORY,
-            "configured_root": str(self.root) if self.root else None,
-            "available": bool(self.root and self.root.exists()),
-            "skill_count": len(self.available_skills()),
-        }
+        payload = repository_provenance(
+            name="pageman/Sutskever-Agent",
+            url=self.CANONICAL_REPOSITORY,
+            root=self.root,
+        )
+        payload["skill_count"] = len(self.available_skills())
+        return payload
 
     def narrate(self, artifact: Dict[str, Any]) -> str:
         trajectory = artifact["trajectory"]

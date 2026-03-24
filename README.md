@@ -227,6 +227,8 @@ This will:
 7. run a GPT-1 wind tunnel profile using the configured adapter or a fallback dry-run approximation
 8. run a multi-axis sweep over scale, data volume, and task family
 9. export sweep records and surface summaries to `./artifacts/sweeps/`
+10. run a measured study using actual tiny GPT-1 training loops on task families derived from the linked substrate
+11. export held-out validation, bootstrap intervals, and falsifiable law statements to `./artifacts/measured/`
 
 ## Linked Mode
 
@@ -272,6 +274,14 @@ An artifact contains:
 - aggregate series metrics
 - linked companion-repository metadata
 - an optional narrative layer
+
+The measured study outputs also contain:
+
+- repeated-seed records
+- holdout validation metrics
+- bootstrap coefficient intervals
+- provenance with linked repository commits
+- falsifiable law statements with explicit validation error
 
 ## Configuration Model
 
@@ -322,6 +332,11 @@ At the current version, the repository provides:
 - a sweep runner over scale, data, and task family
 - persistent storage for sweep registries
 - lightweight response-surface fitting
+- measured tiny-run execution against the linked GPT-1 implementation
+- repeated-seed measured studies across differentiated task families
+- held-out predictive validation and bootstrap uncertainty intervals
+- provenance capture with companion-repo commits and dirty state
+- falsifiable law statements exported as machine-readable artifacts
 - JSON artifact export
 - a runnable demo
 - basic tests
@@ -339,6 +354,7 @@ Important limitations:
 - plotting and interactive atlas visualization are not yet included in this standalone repo
 - the current response-surface fitting is still lightweight and should be replaced by stronger uncertainty-aware models
 - notebook execution is still linked to the Sutskever substrate primarily through metadata and provenance, not full execution wrapping
+- the measured studies are still small-scale and should be expanded before making strong external claims
 
 These are appropriate next targets, not hidden problems.
 
