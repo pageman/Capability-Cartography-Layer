@@ -12,6 +12,10 @@ These links are preserved explicitly in code and artifacts. The adapter layer re
 
 The central claim of this project is simple: benchmark folklore is not enough. If a model is “surprisingly strong,” “brittle,” “emergent,” or “lost in the middle,” those labels should resolve into measurable regions, descriptor profiles, compressibility signatures, and threshold estimates. This repo exists to provide the scaffolding for exactly that.
 
+## Reader Guide
+
+If you want the shortest reader-friendly interpretation of what the current results do and do not establish, start with [`TAO_ASSESSMENT.md`](./TAO_ASSESSMENT.md). It evaluates the repository against Terence Tao’s framing of the central modern AI puzzle: we understand the machinery much better than we understand the behavior.
+
 ## Why This Repository Exists
 
 Most open educational model repositories are optimized for understanding how a model is built. That is useful, but incomplete. The deeper scientific question is not merely how a mechanism is implemented, but under what conditions a capability appears, stabilizes, degrades, or collapses.
