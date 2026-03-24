@@ -4,6 +4,7 @@ from .adapters import AgentOverlayAdapter, GPT1WindTunnelAdapter, NotebookSubstr
 from .boundary import BoundaryAnalyzer
 from .compressibility import CompressibilityStack
 from .descriptors import TaskDescriptorExtractor
+from .metrics import aggregate_snapshot_metrics, calibration_error, estimate_capability_score
 from .runner import CapabilityCartographyRunner
 from .schemas import (
     ArtifactBundle,
@@ -17,6 +18,9 @@ from .schemas import (
     InterventionSweep,
     TaskDescriptor,
 )
+from .storage import RunStorage
+from .surfaces import CapabilitySurfaceFitter
+from .sweeps import SweepRunner
 
 __all__ = [
     "AgentOverlayAdapter",
@@ -29,11 +33,17 @@ __all__ = [
     "CapabilityTrajectory",
     "CompressibilityProfile",
     "CompressibilityStack",
+    "CapabilitySurfaceFitter",
     "ExperimentSpec",
     "GPT1WindTunnelAdapter",
     "InterventionConfig",
     "InterventionSweep",
     "NotebookSubstrateAdapter",
+    "RunStorage",
+    "SweepRunner",
     "TaskDescriptor",
     "TaskDescriptorExtractor",
+    "aggregate_snapshot_metrics",
+    "calibration_error",
+    "estimate_capability_score",
 ]

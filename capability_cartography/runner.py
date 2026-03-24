@@ -12,6 +12,7 @@ from .adapters import AgentOverlayAdapter, GPT1WindTunnelAdapter, NotebookSubstr
 from .boundary import BoundaryAnalyzer
 from .compressibility import CompressibilityStack
 from .descriptors import TaskDescriptorExtractor
+from .metrics import aggregate_snapshot_metrics, calibration_error, estimate_capability_score
 from .schemas import (
     ArtifactBundle,
     CapabilitySnapshot,
@@ -82,8 +83,21 @@ class CapabilityCartographyRunner:
         )
         trajectory.boundary_events = self.boundary.detect_events(snapshots, metric="capability_score")
         trajectory.fitted_boundaries = [self.boundary.fit_threshold(snapshots, metric="capability_score")]
+        trajectory.aggregate_metrics = {
+            "series_metrics": aggregate_snapshot_metrics(metric_series),
+            "phase_summary": self.boundary.summarize_phase_region(snapshots, metric="capability_score"),
+            "calibration_error": calibration_error(metric_series),
+        }
 
-        bundle = ArtifactBundle(spec=spec, trajectory=trajectory)
+        bundle = ArtifactBundle(
+            spec=spec,
+            trajectory=trajectory,
+            linked_repositories={
+                "substrate": self.substrate_adapter.link_metadata(),
+                "agent": self.agent_adapter.link_metadata(),
+                "wind_tunnel": self.wind_tunnel_adapter.link_metadata(),
+            },
+        )
         bundle.narrative = self.agent_adapter.narrate(bundle.to_dict())
         if export_dir is not None:
             bundle.export_path = self.export(bundle, export_dir=export_dir)
@@ -151,21 +165,52 @@ class CapabilityCartographyRunner:
         length_factor = min(len(text) / 200.0, 1.0)
         retrieval_penalty = float(intervention.retrieval.get("distractor_density", 0.0))
         context_bonus = min(float(intervention.context_geometry.get("answer_position", 0)) / 100.0, 0.2)
-        base = max(0.1, 0.45 + length_factor + context_bonus - retrieval_penalty)
+        scale = float(intervention.architecture.get("d_model", 64)) * float(intervention.architecture.get("num_layers", 2))
+        data_tokens = float(intervention.data_regime.get("data_tokens", intervention.data_regime.get("dataset_size", 4096)))
+        descriptor_complexity = max(0.0, 1.0 - length_factor - context_bonus)
+        noise_penalty = float(intervention.data_regime.get("noise_level", 0.0))
+        base = estimate_capability_score(
+            scale=scale,
+            data_tokens=data_tokens,
+            descriptor_complexity=descriptor_complexity,
+            retrieval_penalty=retrieval_penalty,
+            noise_penalty=noise_penalty,
+        )
+        phases = (0.0, 0.08, 0.16, 0.22, 0.27)
         return [
             {
-                "capability_score": float(min(base, 1.0)),
-                "loss_proxy": float(max(0.1, 1.1 - base)),
+                "capability_score": float(min(base + phases[0], 1.0)),
+                "loss_proxy": float(max(0.1, 1.05 - (base + phases[0]))),
                 "retrieval_dependence": float(intervention.retrieval.get("enabled", False)),
+                "data_tokens": data_tokens,
+                "scale_proxy": scale,
             },
             {
-                "capability_score": float(min(base + 0.18, 1.0)),
-                "loss_proxy": float(max(0.05, 0.95 - base)),
+                "capability_score": float(min(base + phases[1], 1.0)),
+                "loss_proxy": float(max(0.08, 0.98 - (base + phases[1]))),
                 "retrieval_dependence": float(intervention.retrieval.get("enabled", False)),
+                "data_tokens": data_tokens,
+                "scale_proxy": scale,
             },
             {
-                "capability_score": float(min(base + 0.3, 1.0)),
-                "loss_proxy": float(max(0.02, 0.75 - base)),
+                "capability_score": float(min(base + phases[2], 1.0)),
+                "loss_proxy": float(max(0.06, 0.88 - (base + phases[2]))),
                 "retrieval_dependence": float(intervention.retrieval.get("enabled", False)),
+                "data_tokens": data_tokens,
+                "scale_proxy": scale,
+            },
+            {
+                "capability_score": float(min(base + phases[3], 1.0)),
+                "loss_proxy": float(max(0.04, 0.80 - (base + phases[3]))),
+                "retrieval_dependence": float(intervention.retrieval.get("enabled", False)),
+                "data_tokens": data_tokens,
+                "scale_proxy": scale,
+            },
+            {
+                "capability_score": float(min(base + phases[4], 1.0)),
+                "loss_proxy": float(max(0.03, 0.74 - (base + phases[4]))),
+                "retrieval_dependence": float(intervention.retrieval.get("enabled", False)),
+                "data_tokens": data_tokens,
+                "scale_proxy": scale,
             },
         ]

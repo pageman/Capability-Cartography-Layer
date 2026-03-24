@@ -9,6 +9,7 @@ from capability_cartography.compressibility import CompressibilityStack
 from capability_cartography.descriptors import TaskDescriptorExtractor
 from capability_cartography.runner import CapabilityCartographyRunner
 from capability_cartography.schemas import CapabilitySnapshot, ExperimentSpec, InterventionConfig
+from capability_cartography.sweeps import SweepRunner
 
 
 class CapabilityCartographyTests(unittest.TestCase):
@@ -67,6 +68,41 @@ class CapabilityCartographyTests(unittest.TestCase):
             )
             self.assertIsNotNone(bundle.export_path)
             self.assertTrue(Path(bundle.export_path).exists())
+            self.assertIn("linked_repositories", bundle.to_dict())
+            self.assertIn("series_metrics", bundle.trajectory.aggregate_metrics)
+
+    def test_sweep_runner_outputs_summary(self):
+        runner = CapabilityCartographyRunner()
+        intervention = InterventionConfig(
+            architecture={"d_model": 32, "num_heads": 2, "num_layers": 2, "d_ff": 64},
+            objective={"loss_type": "next_token"},
+            data_regime={"data_tokens": 2048},
+            retrieval={"enabled": True, "distractor_density": 0.1},
+            context_geometry={"answer_position": 24},
+        )
+        spec = ExperimentSpec(
+            experiment_id="sweep-demo",
+            substrate="sutskever-30-implementations",
+            task_name="qa",
+            benchmark_label="unit",
+            realism_level="synthetic",
+            objective_type="next_token",
+            model_family="unit",
+        )
+        with TemporaryDirectory() as temp_dir:
+            sweep_runner = SweepRunner(runner, temp_dir)
+            result = sweep_runner.run_grid(
+                base_spec=spec,
+                base_intervention=intervention,
+                text="The model retrieves a lemma and performs a proof step.",
+                retrieval_context="lemma retrieval context",
+                scale_values=[32, 64],
+                data_token_values=[2048, 4096],
+                task_family_values=["retrieval_qa"],
+                seeds=[1],
+            )
+            self.assertEqual(result["summary"]["record_count"], 4)
+            self.assertIn("surface_fit", result["summary"])
 
 
 if __name__ == "__main__":

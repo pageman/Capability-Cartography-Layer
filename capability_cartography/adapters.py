@@ -18,6 +18,7 @@ def _env_or_default(env_var: str, default: str | None) -> Path | None:
 
 class NotebookSubstrateAdapter:
     """Metadata and task adapters for the Sutskever-30 substrate."""
+    CANONICAL_REPOSITORY = "https://github.com/pageman/Sutskever-30-implementations"
 
     PAPER_TRACKS = {
         "01_complexity_dynamics": "foundational",
@@ -65,9 +66,19 @@ class NotebookSubstrateAdapter:
             "size_bytes": path.stat().st_size,
         }
 
+    def link_metadata(self) -> Dict[str, Any]:
+        return {
+            "name": "pageman/Sutskever-30-implementations",
+            "url": self.CANONICAL_REPOSITORY,
+            "configured_root": str(self.root) if self.root else None,
+            "available": bool(self.root and self.root.exists()),
+            "notebook_count": len(self.list_notebooks()),
+        }
+
 
 class GPT1WindTunnelAdapter:
     """Loads the GPT-1 implementation and exposes cartography-friendly hooks."""
+    CANONICAL_REPOSITORY = "https://github.com/pageman/gpt1-from-Sutskever30"
 
     def __init__(self, root: Path | str | None = None):
         resolved = Path(root).expanduser() if root else _env_or_default("GPT1_WIND_TUNNEL_ROOT", None)
@@ -120,9 +131,18 @@ class GPT1WindTunnelAdapter:
             "capacity_proxy": float(model.num_layers * model.num_heads * model.d_model),
         }
 
+    def link_metadata(self) -> Dict[str, Any]:
+        return {
+            "name": "pageman/gpt1-from-Sutskever30",
+            "url": self.CANONICAL_REPOSITORY,
+            "configured_root": str(self.root) if self.root else None,
+            "available": self.is_available(),
+        }
+
 
 class AgentOverlayAdapter:
     """Reads the agent repo and produces cartography-oriented narratives."""
+    CANONICAL_REPOSITORY = "https://github.com/pageman/Sutskever-Agent"
 
     def __init__(self, root: Path | str | None = None):
         resolved = Path(root).expanduser() if root else _env_or_default("SUTSKEVER_AGENT_ROOT", None)
@@ -135,6 +155,15 @@ class AgentOverlayAdapter:
 
     def available_skills(self) -> List[str]:
         return list(self.agent_config.get("skills", []))
+
+    def link_metadata(self) -> Dict[str, Any]:
+        return {
+            "name": "pageman/Sutskever-Agent",
+            "url": self.CANONICAL_REPOSITORY,
+            "configured_root": str(self.root) if self.root else None,
+            "available": bool(self.root and self.root.exists()),
+            "skill_count": len(self.available_skills()),
+        }
 
     def narrate(self, artifact: Dict[str, Any]) -> str:
         trajectory = artifact["trajectory"]

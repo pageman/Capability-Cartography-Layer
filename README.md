@@ -8,6 +8,8 @@ This repository is designed to sit on top of three companion resources:
 - `pageman/Sutskever-Agent` as the orchestration and explanatory layer
 - `pageman/gpt1-from-sutskever30` as the first controlled transformer wind tunnel
 
+These links are preserved explicitly in code and artifacts. The adapter layer records canonical repository URLs and configured local roots so every cartography export can retain its provenance back to those three repos rather than treating them as anonymous backends.
+
 The central claim of this project is simple: benchmark folklore is not enough. If a model is “surprisingly strong,” “brittle,” “emergent,” or “lost in the middle,” those labels should resolve into measurable regions, descriptor profiles, compressibility signatures, and threshold estimates. This repo exists to provide the scaffolding for exactly that.
 
 ## Why This Repository Exists
@@ -132,6 +134,18 @@ The main Python package.
 - [`capability_cartography/demo.py`](./capability_cartography/demo.py)
   Demonstrates the full pipeline and writes JSON artifacts to `./artifacts/`.
 
+- [`capability_cartography/sweeps.py`](./capability_cartography/sweeps.py)
+  Runs scale/data/task-family grids and builds a sweep registry suitable for onset-surface analysis.
+
+- [`capability_cartography/surfaces.py`](./capability_cartography/surfaces.py)
+  Fits lightweight predictive surfaces and onset thresholds across sweep records.
+
+- [`capability_cartography/storage.py`](./capability_cartography/storage.py)
+  Persists per-run artifacts and tabular sweep summaries.
+
+- [`capability_cartography/metrics.py`](./capability_cartography/metrics.py)
+  Computes aggregate metrics, calibration-style error, and capability proxies for measured synthetic trajectories.
+
 ### `tests/`
 
 Basic unit tests using the Python standard library’s `unittest` module.
@@ -186,6 +200,12 @@ The adapters are designed so that:
 - if the agent repo is configured, skill metadata can be read from the agent manifest
 - if some repos are missing, the framework still works in reduced mode
 
+Every exported artifact now includes `linked_repositories` metadata referencing:
+
+- `https://github.com/pageman/Sutskever-30-implementations`
+- `https://github.com/pageman/Sutskever-Agent`
+- `https://github.com/pageman/gpt1-from-Sutskever30`
+
 ## Quick Start
 
 Run the demo:
@@ -203,6 +223,8 @@ This will:
 5. generate a narrative summary
 6. export artifacts to `./artifacts/`
 7. run a GPT-1 wind tunnel profile using the configured adapter or a fallback dry-run approximation
+8. run a multi-axis sweep over scale, data volume, and task family
+9. export sweep records and surface summaries to `./artifacts/sweeps/`
 
 ## Example Output Artifacts
 
@@ -221,6 +243,8 @@ An artifact contains:
 - compressibility summaries
 - boundary events
 - fitted boundary statistics
+- aggregate series metrics
+- linked companion-repository metadata
 - an optional narrative layer
 
 ## Configuration Model
@@ -269,6 +293,9 @@ At the current version, the repository provides:
 - lightweight boundary and regime analysis
 - a GPT-1 wind tunnel bridge
 - a Sutskever-Agent narration bridge
+- a sweep runner over scale, data, and task family
+- persistent storage for sweep registries
+- lightweight response-surface fitting
 - JSON artifact export
 - a runnable demo
 - basic tests
@@ -284,6 +311,8 @@ Important limitations:
 - notebook execution wrapping is metadata-oriented today rather than full notebook runtime orchestration
 - the GPT-1 integration currently emphasizes probing and instrumentation rather than large-scale sweep automation
 - plotting and interactive atlas visualization are not yet included in this standalone repo
+- the current response-surface fitting is still lightweight and should be replaced by stronger uncertainty-aware models
+- notebook execution is still linked to the Sutskever substrate primarily through metadata and provenance, not full execution wrapping
 
 These are appropriate next targets, not hidden problems.
 

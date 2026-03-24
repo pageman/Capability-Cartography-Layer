@@ -99,6 +99,7 @@ class CapabilityTrajectory:
     snapshots: List[CapabilitySnapshot]
     boundary_events: List[BoundaryEvent] = field(default_factory=list)
     fitted_boundaries: List[BoundaryFit] = field(default_factory=list)
+    aggregate_metrics: Dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -108,6 +109,7 @@ class CapabilityTrajectory:
             "snapshots": [snapshot.to_dict() for snapshot in self.snapshots],
             "boundary_events": [event.to_dict() for event in self.boundary_events],
             "fitted_boundaries": [fit.to_dict() for fit in self.fitted_boundaries],
+            "aggregate_metrics": dict(self.aggregate_metrics),
         }
 
 
@@ -175,11 +177,13 @@ class ArtifactBundle:
     trajectory: CapabilityTrajectory
     narrative: Optional[str] = None
     export_path: Optional[str] = None
+    linked_repositories: Dict[str, Dict[str, Any]] = field(default_factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
         payload = {
             "spec": self.spec.to_dict(),
             "trajectory": self.trajectory.to_dict(),
+            "linked_repositories": dict(self.linked_repositories),
         }
         if self.narrative is not None:
             payload["narrative"] = self.narrative

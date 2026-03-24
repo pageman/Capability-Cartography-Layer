@@ -7,6 +7,7 @@ from pathlib import Path
 
 from .runner import CapabilityCartographyRunner
 from .schemas import ExperimentSpec, InterventionConfig
+from .sweeps import SweepRunner
 
 
 def main() -> None:
@@ -64,6 +65,21 @@ def main() -> None:
     print()
     print("Wind Tunnel Summary")
     print(json.dumps(wind_tunnel_bundle.to_dict(), indent=2)[:1200])
+
+    sweep_runner = SweepRunner(runner, artifacts_dir)
+    sweep_result = sweep_runner.run_grid(
+        base_spec=spec,
+        base_intervention=intervention,
+        text=text,
+        retrieval_context=retrieval_context,
+        scale_values=[32, 64, 128],
+        data_token_values=[2048, 8192, 32768],
+        task_family_values=["synthetic_reasoning", "retrieval_qa"],
+        seeds=[1, 2],
+    )
+    print()
+    print("Sweep Summary")
+    print(json.dumps(sweep_result["summary"], indent=2))
 
 
 if __name__ == "__main__":
