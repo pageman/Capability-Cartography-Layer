@@ -200,6 +200,8 @@ The adapters are designed so that:
 - if the agent repo is configured, skill metadata can be read from the agent manifest
 - if some repos are missing, the framework still works in reduced mode
 
+They also try a small set of likely local clone locations automatically. On a machine with the repos cloned in common places under `~` or `~/Downloads`, linked mode can work without exporting any environment variables.
+
 Every exported artifact now includes `linked_repositories` metadata referencing:
 
 - `https://github.com/pageman/Sutskever-30-implementations`
@@ -225,6 +227,30 @@ This will:
 7. run a GPT-1 wind tunnel profile using the configured adapter or a fallback dry-run approximation
 8. run a multi-axis sweep over scale, data volume, and task family
 9. export sweep records and surface summaries to `./artifacts/sweeps/`
+
+## Linked Mode
+
+If the companion repositories already exist in standard local locations, this is enough:
+
+```bash
+cd Capability-Cartography-Layer
+python3 -m capability_cartography.demo
+```
+
+If you want to force specific linked roots, use:
+
+```bash
+SUTSKEVER30_ROOT=/path/to/sutskever-30-implementations \
+SUTSKEVER_AGENT_ROOT=/path/to/Sutskever-Agent/sutskever-agent \
+GPT1_WIND_TUNNEL_ROOT=/path/to/gpt1-from-Sutskever30 \
+python3 -m capability_cartography.demo
+```
+
+When linked mode is active, the exported artifacts will show `available: true` in `linked_repositories` and will record the configured local roots for:
+
+- `pageman/Sutskever-30-implementations`
+- `pageman/Sutskever-Agent`
+- `pageman/gpt1-from-Sutskever30`
 
 ## Example Output Artifacts
 

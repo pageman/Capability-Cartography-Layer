@@ -16,9 +16,28 @@ def _env_or_default(env_var: str, default: str | None) -> Path | None:
     return Path(value).expanduser() if value else None
 
 
+def _resolve_root(explicit: Path | str | None, env_var: str, candidates: List[str]) -> Path | None:
+    if explicit is not None:
+        path = Path(explicit).expanduser()
+        return path
+    env_path = _env_or_default(env_var, None)
+    if env_path is not None:
+        return env_path
+    for candidate in candidates:
+        path = Path(candidate).expanduser()
+        if path.exists():
+            return path
+    return None
+
+
 class NotebookSubstrateAdapter:
     """Metadata and task adapters for the Sutskever-30 substrate."""
     CANONICAL_REPOSITORY = "https://github.com/pageman/Sutskever-30-implementations"
+    DEFAULT_CANDIDATES = [
+        "~/sutskever-30-implementations",
+        "~/Downloads/sutskever-30-implementations/sutskever-30-implementations-main",
+        "~/Downloads/sutskever-30-implementations",
+    ]
 
     PAPER_TRACKS = {
         "01_complexity_dynamics": "foundational",
@@ -35,8 +54,7 @@ class NotebookSubstrateAdapter:
     }
 
     def __init__(self, root: Path | str | None = None):
-        resolved = Path(root).expanduser() if root else _env_or_default("SUTSKEVER30_ROOT", None)
-        self.root = resolved
+        self.root = _resolve_root(root, "SUTSKEVER30_ROOT", self.DEFAULT_CANDIDATES)
 
     def list_notebooks(self) -> List[Dict[str, str]]:
         if self.root is None or not self.root.exists():
@@ -79,10 +97,14 @@ class NotebookSubstrateAdapter:
 class GPT1WindTunnelAdapter:
     """Loads the GPT-1 implementation and exposes cartography-friendly hooks."""
     CANONICAL_REPOSITORY = "https://github.com/pageman/gpt1-from-Sutskever30"
+    DEFAULT_CANDIDATES = [
+        "~/gpt1-from-Sutskever30",
+        "~/Downloads/GPT1_from_Sutskerver30/GPT1_from_Sutskever30",
+        "~/Downloads/gpt1-from-Sutskever30",
+    ]
 
     def __init__(self, root: Path | str | None = None):
-        resolved = Path(root).expanduser() if root else _env_or_default("GPT1_WIND_TUNNEL_ROOT", None)
-        self.root = resolved
+        self.root = _resolve_root(root, "GPT1_WIND_TUNNEL_ROOT", self.DEFAULT_CANDIDATES)
         self.module = None
         if self.root is not None:
             path = self.root / "gpt1_complete_implementation.py"
@@ -143,10 +165,14 @@ class GPT1WindTunnelAdapter:
 class AgentOverlayAdapter:
     """Reads the agent repo and produces cartography-oriented narratives."""
     CANONICAL_REPOSITORY = "https://github.com/pageman/Sutskever-Agent"
+    DEFAULT_CANDIDATES = [
+        "~/Sutskever-Agent/sutskever-agent",
+        "~/Downloads/Sutskever-Agent/sutskever-agent",
+        "~/Downloads/sutskever-agent",
+    ]
 
     def __init__(self, root: Path | str | None = None):
-        resolved = Path(root).expanduser() if root else _env_or_default("SUTSKEVER_AGENT_ROOT", None)
-        self.root = resolved
+        self.root = _resolve_root(root, "SUTSKEVER_AGENT_ROOT", self.DEFAULT_CANDIDATES)
         self.agent_config = {}
         if self.root is not None:
             agent_yaml = self.root / "agent.yaml"

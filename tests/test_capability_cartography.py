@@ -4,6 +4,7 @@ import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
+from capability_cartography.adapters import AgentOverlayAdapter, GPT1WindTunnelAdapter, NotebookSubstrateAdapter
 from capability_cartography.boundary import BoundaryAnalyzer
 from capability_cartography.compressibility import CompressibilityStack
 from capability_cartography.descriptors import TaskDescriptorExtractor
@@ -103,6 +104,14 @@ class CapabilityCartographyTests(unittest.TestCase):
             )
             self.assertEqual(result["summary"]["record_count"], 4)
             self.assertIn("surface_fit", result["summary"])
+
+    def test_adapter_explicit_roots(self):
+        substrate = NotebookSubstrateAdapter("/Users/hifi/sutskever-30-implementations")
+        agent = AgentOverlayAdapter("/Users/hifi/Downloads/Sutskever-Agent/sutskever-agent")
+        wind_tunnel = GPT1WindTunnelAdapter("/Users/hifi/Downloads/GPT1_from_Sutskerver30/GPT1_from_Sutskever30")
+        self.assertTrue(substrate.link_metadata()["available"])
+        self.assertTrue(agent.link_metadata()["available"])
+        self.assertTrue(wind_tunnel.link_metadata()["available"])
 
 
 if __name__ == "__main__":
