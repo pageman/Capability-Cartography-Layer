@@ -318,6 +318,19 @@ If you are publishing this as `github.com/pageman/Capability-Cartography-Layer`,
 
 > A standalone measurement framework for mapping capability formation, failure geometry, compressibility, retrieval dependence, and phase boundaries across the Sutskever research substrate and compact GPT-style wind tunnels.
 
+## Citation
+
+```bibtex
+@misc{capability-cartography-layer-2026,
+  author    = {Paul "The Pageman" Pajo, pageman@gmail.com},
+  title     = {Capability-Cartography-Layer: a standalone empirical framework for mapping capability formation, failure geometry, compressibility, retrieval dependence, and phase boundaries},
+  year      = {2026},
+  url       = {https://github.com/pageman/Capability-Cartography-Layer},
+  note      = {Research instrumentation layer designed to integrate pageman/sutskever-30-implementations,
+               pageman/Sutskever-Agent, and pageman/gpt1-from-sutskever30 into a unified capability-mapping workflow.}
+}
+```
+
 ## License
 
 This repository is released under the MIT License. See [`LICENSE`](./LICENSE).
